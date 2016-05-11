@@ -1,0 +1,13 @@
+GET     /                  	controllers.Application.index()
+GET     /assets/*file     	controllers.Assets.at(path="/public", file)
+
+# category
+GET		/category			controllers.CategoryController.index()
+GET		/category/find		controllers.CategoryController.find(id: Option[Int], name: Option[String], parentId: Option[Int])
+POST	/category/insert	controllers.CategoryController.insert()
+POST	/category/update	controllers.CategoryController.update()
+DELETE	/category/delete	controllers.CategoryController.delete(id: Option[Int])
+
+# product
+GET		/product			controllers.ProductController.index
+GET		/product/find		controllers.ProductController.find(id: Option[Int], size: Option[String], color: Option[String], minPrice: Option[Double], maxPrice: Option[Double])
