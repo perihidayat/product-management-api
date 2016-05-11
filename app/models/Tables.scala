@@ -146,9 +146,6 @@ object Tables extends {
   case class ProductDetails(id: Int, color: ColorRow, size: String, stock: Int, price: Double)
   implicit val productDetailsFormat = Json.format[ProductDetails]
   
-  case class ProductResult(id: Int, name: String, desc: String, productDetails: Seq[ProductDetails])
-  implicit val productResultFormat = Json.format[ProductResult]
-  
   /**
    * Entity class storing rows of table ProductImage
    *  @param id Database column id SqlType(INTEGER), PrimaryKey
@@ -180,6 +177,10 @@ object Tables extends {
   }
   /** Collection-like TableQuery object for table ProductImage */
   lazy val productImages = new TableQuery(tag => new ProductImage(tag))
+  implicit val productImageFormat = Json.format[ProductImageRow]
+
+  case class ProductResult(id: Int, name: String, desc: String, productDetails: Seq[ProductDetails], images: Seq[ProductImageRow])
+  implicit val productResultFormat = Json.format[ProductResult]
 
   /**
    * Entity class storing rows of table ProductCategory

@@ -13,30 +13,38 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class ProductController extends Controller {
 
-  def loadProductImages() = {
-    val q = for { (p, pi) <- products join productImages on (_.id === _.productId) } yield (p.id, pi)
-    val qResult = Await.result(db.run(q.result), Duration.Inf)
-    qResult.groupBy(_._1).mapValues(_.map(_._2))
-  }
-
   def loadJoinedProduct() = {
     for { ((p, pd), c) <- products join productDetails on (_.id === _.productId) join colors on (_._2.colorId === _.id) } yield (p, pd, c)
   }
-
-  def groupJoinedProduct(qResult: Seq[(ProductRow, ProductDetailRow, ColorRow)]) = {
+  
+  def groupProductDetail(qResult: Seq[(ProductRow, ProductDetailRow, ColorRow)]) = {
     qResult.groupBy(_._1).mapValues(_.map(x => ProductDetails(x._2.id, x._3, x._2.size, x._2.stock, x._2.price)))
   }
 
-  def parseToProductResult(grouped: Map[ProductRow, Seq[ProductDetails]]) = {
-    grouped.map(x => ProductResult(x._1.id, x._1.name, x._1.desc, x._2))
+  def loadProductImages(productIds: Seq[Int]) = {
+	  val join = for {
+		  p <- products
+		  pi <- productImages if p.id === pi.productId if p.id inSet productIds
+	  } yield (p.id, pi)
+	  val qResult = Await.result(db.run(join.result), Duration.Inf)
+	  qResult.groupBy(_._1).mapValues(_.map(_._2))
   }
 
+  def parseToProductResult(details: Map[ProductRow, Seq[ProductDetails]], images: Map[Int, Seq[ProductImageRow]]) : Iterable[ProductResult] = {
+    details.map(x => ProductResult(x._1.id, x._1.name, x._1.desc, x._2, images.get(x._1.id).getOrElse(Seq[ProductImageRow]())))
+  }
+
+  def processResult(qResult: Seq[(ProductRow, ProductDetailRow, ColorRow)]) : Iterable[ProductResult] = {
+    val groupedDetails = groupProductDetail(qResult)
+    val productIds = groupedDetails.map(_._1.id)
+    val productImages = loadProductImages(productIds.toSeq)
+    parseToProductResult(groupedDetails, productImages)
+  }
+  
   def index = Authenticated(
     rs => {
       val qResult = Await.result(db.run(loadJoinedProduct().result), Duration.Inf)
-      val grouped = groupJoinedProduct(qResult)
-      val result = parseToProductResult(grouped)
-      Ok(toJson(Json.obj("products" -> result)))
+      Ok(toJson(Json.obj("products" -> processResult(qResult))))
     })
 
   def find(id: Option[Int], size: Option[String], color: Option[String], minPrice: Option[Double], maxPrice: Option[Double]): Action[AnyContent] = Authenticated(
@@ -50,9 +58,7 @@ class ProductController extends Controller {
           && (x._2.price <= maxPrice || maxPrice.isEmpty))
       }
       val qResult = Await.result(db.run(filtered.result), Duration.Inf)
-      val grouped = groupJoinedProduct(qResult)
-      val result = parseToProductResult(grouped)
-      Ok(toJson(Json.obj("products" -> result)))
+      Ok(toJson(Json.obj("products" -> processResult(qResult))))
     })
 
   def parseToObject(rs: Request[Any]): Option[ProductRow] = {

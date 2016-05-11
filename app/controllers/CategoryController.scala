@@ -23,7 +23,7 @@ class CategoryController extends Controller {
     rs => {
       val filtered = categories.filter { x =>
         ((x.id === id || id.isEmpty)
-          && (x.name === name || name.isEmpty)
+          && (x.name like (s"%${name.getOrElse("")}%"))
           && (x.parent === parent || parent.isEmpty))
       }
       val result = Await.result(db.run(filtered.result), Duration.Inf)
