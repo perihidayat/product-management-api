@@ -39,6 +39,8 @@ object Tables extends {
   lazy val categories = new TableQuery(tag => new Category(tag))
   implicit val categoryFormat = Json.format[CategoryRow]
 
+  case class CategoryHierarchy(id: Int, name: String, childs: Option[Seq[CategoryRow]])
+  
   /**
    * Entity class storing rows of table Color
    *  @param id Database column id SqlType(INTEGER), PrimaryKey

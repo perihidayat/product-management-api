@@ -84,4 +84,52 @@ class CategoryController extends Controller {
       Ok(Json.toJson(DefaultResponse(Ok.header.status, s"$result rows deleted.")))
     })
 
+  def up(id: Option[Int]): Action[AnyContent] = Authenticated(
+    rs => {
+      Ok(toJson(Json.obj("hierarchy" -> loadTopDownCategories(id))))
+    })
+
+  def loadTopDownCategories(id: Option[Int]): Seq[CategoryRow] = {
+    val cond = id match { case Some(x) => s"$x" case None => "id" }
+    val sql = sql"""WITH RECURSIVE cnt(id) AS (
+           SELECT id
+           from mst_category 
+           where id = #$cond
+           UNION ALL
+           SELECT cat.id
+           FROM mst_category cat, cnt
+           where cat.parent = cnt.id
+       ) 
+       select * from mst_category where id in cnt""".as[CategoryRow]
+    val result = Await.result(db.run(sql), Duration.Inf)
+    //    val grouped = result.groupBy { _.parent }
+    //    val res = grouped.foldLeft(Map[Int, CategoryHierarchy]())((res, in) =>
+    //      in._1 match {
+    //        case None    => res ++ in._2.map { x => (x.id, CategoryHierarchy(x.id, x.name, Option(Seq[CategoryRow]()))) }
+    //        case Some(x) => res.contains(x)
+    //      })
+    result.toSeq
+  }
+
+  def down(id: Option[Int]): Action[AnyContent] = Authenticated(
+    rs => {
+      Ok(toJson(Json.obj("hierarchy" -> loadBottomUpCategories(id))))
+    })
+
+  def loadBottomUpCategories(id: Option[Int]): Seq[CategoryRow] = {
+    val cond = id match { case Some(x) => s"$x" case None => "id" }
+    val sql = sql"""WITH RECURSIVE cnt(id) AS (
+             SELECT id
+             from mst_category
+             where id = #$cond
+             UNION ALL
+             SELECT cat.parent 
+             FROM mst_category cat, cnt
+             where cat.id = cnt.id
+       ) 
+       select * from mst_category where id in cnt""".as[CategoryRow]
+    val result = Await.result(db.run(sql), Duration.Inf)
+    result.toSeq
+  }
+
 }

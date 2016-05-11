@@ -1,9 +1,11 @@
-# category
+# category #
 GET		/category			controllers.CategoryController.index()
 GET		/category/find		controllers.CategoryController.find(id: Option[Int], name: Option[String], parentId: Option[Int])
 POST	/category/insert	controllers.CategoryController.insert()
 POST	/category/update	controllers.CategoryController.update()
 DELETE	/category/delete	controllers.CategoryController.delete(id: Option[Int])
+GET		/category/up		controllers.CategoryController.up(id: Option[Int])
+GET		/category/down		controllers.CategoryController.down(id: Option[Int])
 
 # product
 GET		/product			controllers.ProductController.index
