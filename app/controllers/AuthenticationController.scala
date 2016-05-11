@@ -43,7 +43,7 @@ object AuthenticationController {
   private def isValidTimestamp(dateHeader: Option[String]): Boolean = {
     dateHeader match {
       case Some(x) => {
-        DateTime.now().minusMinutes(1440).isBefore(DateTime.parse(x, formatter))
+        DateTime.now().minusMinutes(10).isBefore(DateTime.parse(x, formatter))
       }
       case None => false
     }
