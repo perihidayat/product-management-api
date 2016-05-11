@@ -25,7 +25,6 @@ object AuthenticationController {
     Action {
       request =>
         {
-          /*
           val headers = request.headers
           if (!isValidTimestamp(headers.get(HeaderNames.DATE))) {
             RequestTimeout(Json.toJson(DefaultResponse(RequestTimeout.header.status, "RequestTimeout")))
@@ -37,8 +36,6 @@ object AuthenticationController {
               case None    => unauthorizedResult
             }
           }
-          */
-        	f(request)
         }
     }
   }
