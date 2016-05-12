@@ -100,7 +100,7 @@ class CategoryController extends Controller {
            FROM mst_category cat, cnt
            where cat.parent = cnt.id
        ) 
-       select * from mst_category where id in cnt""".as[CategoryRow]
+       select * from mst_category where id in (select * from cnt)""".as[CategoryRow]
     val result = Await.result(db.run(sql), Duration.Inf)
     //    val grouped = result.groupBy { _.parent }
     //    val res = grouped.foldLeft(Map[Int, CategoryHierarchy]())((res, in) =>
@@ -127,7 +127,7 @@ class CategoryController extends Controller {
              FROM mst_category cat, cnt
              where cat.id = cnt.id
        ) 
-       select * from mst_category where id in cnt""".as[CategoryRow]
+       select * from mst_category where id in (select * from cnt)""".as[CategoryRow]
     val result = Await.result(db.run(sql), Duration.Inf)
     result.toSeq
   }
