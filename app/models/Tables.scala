@@ -5,9 +5,12 @@ import play.api.libs.json.Json
 import play.api.libs.json.Writes
 import com.typesafe.config.ConfigFactory
 import slick.driver.PostgresDriver
+import java.net.URI
+import slick.driver.SQLiteDriver
+import slick.jdbc.JdbcBackend.DatabaseDef
 
 object Tables extends {
-  val profile = slick.driver.PostgresDriver
+  val profile = if (ConfigFactory.load().getString("db.default.driver").contains("postgresql")) slick.driver.PostgresDriver else slick.driver.SQLiteDriver
 } with DatabaseFactoryDef {
 
   import profile.api._
@@ -15,12 +18,22 @@ object Tables extends {
   // NOTE: GetResult mappers for plain SQL are only generated for tables where Slick knows how to map the types of all columns.
   import slick.jdbc.{ GetResult => GR }
 
-  val url = ConfigFactory.load().getString("JDBC_DATABASE_URL")
-  val driver = ConfigFactory.load().getString("db.default.driver")
-  val user = ConfigFactory.load().getString("db.default.user")
-  val pass = ConfigFactory.load().getString("db.default.password")
-  implicit val db = forURL(url, driver = driver)
+  implicit val db = getDbConnection()
 
+  def getDbConnection(): DatabaseDef = {
+    val driver = ConfigFactory.load().getString("db.default.driver")
+    if (driver.contains("postgresql")) {
+      val dbUri = new URI(ConfigFactory.load().getString("db.default.url"))
+      val username = dbUri.getUserInfo().split(":")(0)
+      val password = dbUri.getUserInfo().split(":")(1)
+      val url = s"jdbc:postgresql://${dbUri.getHost()}:${dbUri.getPort()}${dbUri.getPath()}"
+      forURL(url, user = username, password = password, driver = driver)
+    } else {
+      val url = ConfigFactory.load().getString("db.default.url")
+      forURL(url, driver = driver)
+    }
+  }
+  
   case class CategoryRow(id: Int, name: String, parent: Option[Int])
   /** GetResult implicit for fetching CategoryRow objects using plain SQL queries */
   implicit def GetResultCategoryRow(implicit e0: GR[Int], e1: GR[String], e2: GR[Option[Int]]): GR[CategoryRow] = GR {
