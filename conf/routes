@@ -1,12 +1,35 @@
 # category #
-GET		/category			controllers.CategoryController.index()
+GET		/category			controllers.CategoryController.index
 GET		/category/find		controllers.CategoryController.find(id: Option[Int], name: Option[String], parentId: Option[Int])
-POST	/category/insert	controllers.CategoryController.insert()
-POST	/category/update	controllers.CategoryController.update()
+POST	/category/insert	controllers.CategoryController.insert
+POST	/category/update	controllers.CategoryController.update
 DELETE	/category/delete	controllers.CategoryController.delete(id: Option[Int])
 GET		/category/up		controllers.CategoryController.up(id: Option[Int])
 GET		/category/down		controllers.CategoryController.down(id: Option[Int])
 
 # product
-GET		/product			controllers.ProductController.index
-GET		/product/find		controllers.ProductController.find(id: Option[Int], size: Option[String], color: Option[String], minPrice: Option[Double], maxPrice: Option[Double])
+GET		/product				controllers.ProductController.index
+GET		/product/find			controllers.ProductController.find(id: Option[Int], size: Option[String], color: Option[String], minPrice: Option[Double], maxPrice: Option[Double])
+POST	/product/insert-update	controllers.ProductController.insertOrUpdate
+DELETE	/product/delete			controllers.ProductController.delete(id: Option[Int])
+
+# color
+GET		/color					controllers.ColorController.index
+GET		/color/find				controllers.ColorController.find(id: Option[Int], name: Option[String])
+POST	/color/insert-update	controllers.ColorController.insertOrUpdate
+DELETE	/color/delete			controllers.ColorController.delete(id: Option[Int])
+
+# productDetail
+GET		/detail					controllers.ProductDetailController.index
+POST	/detail/insert-update	controllers.ProductDetailController.insertOrUpdate
+DELETE	/detail/delete			controllers.ProductDetailController.delete(id: Option[Int])
+
+# productImage
+GET		/image					controllers.ProductImageController.index
+POST	/image/insert-update	controllers.ProductImageController.insertOrUpdate
+DELETE	/image/delete			controllers.ProductImageController.delete(id: Option[Int])
+
+# productCategory
+GET		/product/category					controllers.ProductCategoryController.index
+POST	/product/category/insert-update		controllers.ProductCategoryController.insertOrUpdate
+DELETE	/product/category/delete			controllers.ProductCategoryController.delete(id: Option[Int])

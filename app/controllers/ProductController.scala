@@ -1,5 +1,6 @@
 package controllers
 
+import util.JsonUtil._
 import models.Tables._
 import models.Tables.profile.api._
 import controllers.AuthenticationController._
@@ -61,49 +62,12 @@ class ProductController extends Controller {
       Ok(toJson(Json.obj("products" -> processResult(qResult))))
     })
 
-  def parseToObject(rs: Request[Any]): Option[ProductRow] = {
-    def parseIfNotEmpty(json: Option[JsValue]) = {
-      json match {
-        case Some(x) => x.asOpt[ProductRow]
-        case _       => None
-      }
-    }
-    rs.body match {
-      case x: AnyContentAsJson => parseIfNotEmpty(x.asJson)
-      case x: AnyContentAsRaw  => parseIfNotEmpty(x.asJson)
-      case x: AnyContentAsText => parseIfNotEmpty(x.asJson)
-      case _                   => None
-    }
-  }
-
-  def insert(): Action[AnyContent] = Authenticated(
+  def insertOrUpdate(): Action[AnyContent] = Authenticated(
     rs => {
-      parseToObject(rs) match {
+      parseBodyToProduct(rs) match {
         case Some(x) => {
-          val result = Await.result(db.run(products.filter { row => row.id === x.id }.result), Duration.Inf)
-          if (!result.isEmpty)
-            BadRequest(Json.toJson(DefaultResponse(BadRequest.header.status, s"Item with id ${x.id} already exists. Use /update instead.")))
-          else {
-            db.run(products += x)
-            Ok(toJson(x))
-          }
-        }
-        case None => BadRequest(Json.toJson(DefaultResponse(BadRequest.header.status, "Invalid body")))
-      }
-    })
-
-  def update(): Action[AnyContent] = Authenticated(
-    rs => {
-      parseToObject(rs) match {
-        case Some(x) => {
-          val result = Await.result(db.run(products.filter { row => row.id === x.id }.result), Duration.Inf)
-          if (result.isEmpty)
-            BadRequest(Json.toJson(DefaultResponse(BadRequest.header.status, s"Item with id ${x.id} not exists. Use /insert instead.")))
-          else {
-//            val q = for { c <- products if c.id === x.id } yield (c.name, c.parent)
-//            db.run(q.update(x.name, x.parent))
-            Ok(toJson(x))
-          }
+          val result = Await.result(db.run(products.insertOrUpdate(x)), Duration.Inf)
+          Ok(Json.toJson(DefaultResponse(Ok.header.status, s"$result rows affected.")))
         }
         case None => BadRequest(Json.toJson(DefaultResponse(BadRequest.header.status, "Invalid body")))
       }

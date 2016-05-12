@@ -1,5 +1,6 @@
 package controllers
 
+import util.JsonUtil._
 import models.Tables._
 import models.Tables.profile.api._
 import controllers.AuthenticationController._
@@ -30,24 +31,9 @@ class CategoryController extends Controller {
       Ok(toJson(Json.obj("categories" -> result)))
     })
 
-  def parseToObject(rs: Request[Any]): Option[CategoryRow] = {
-    def parseIfNotEmpty(json: Option[JsValue]): Option[CategoryRow] = {
-      json match {
-        case Some(x) => x.asOpt[CategoryRow]
-        case _       => None
-      }
-    }
-    rs.body match {
-      case x: AnyContentAsJson => parseIfNotEmpty(x.asJson)
-      case x: AnyContentAsRaw  => parseIfNotEmpty(x.asJson)
-      case x: AnyContentAsText => parseIfNotEmpty(x.asJson)
-      case _                   => None
-    }
-  }
-
   def insert(): Action[AnyContent] = Authenticated(
     rs => {
-      parseToObject(rs) match {
+      parseBodyToCategory(rs) match {
         case Some(x) => {
           val result = Await.result(db.run(categories.filter { row => row.id === x.id }.result), Duration.Inf)
           if (!result.isEmpty)
@@ -63,7 +49,7 @@ class CategoryController extends Controller {
 
   def update(): Action[AnyContent] = Authenticated(
     rs => {
-      parseToObject(rs) match {
+      parseBodyToCategory(rs) match {
         case Some(x) => {
           val result = Await.result(db.run(categories.filter { row => row.id === x.id }.result), Duration.Inf)
           if (result.isEmpty)

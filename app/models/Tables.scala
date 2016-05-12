@@ -1,8 +1,6 @@
 package models
 
 import slick.jdbc.JdbcBackend.DatabaseFactoryDef
-import play.api.libs.json.Json
-import play.api.libs.json.Writes
 import com.typesafe.config.ConfigFactory
 import slick.driver.PostgresDriver
 import java.net.URI
@@ -56,7 +54,6 @@ object Tables extends {
   }
   /** Collection-like TableQuery object for table Category */
   lazy val categories = new TableQuery(tag => new Category(tag))
-  implicit val categoryFormat = Json.format[CategoryRow]
 
   case class CategoryHierarchy(id: Int, name: String, childs: Option[Seq[CategoryRow]])
   
@@ -88,7 +85,6 @@ object Tables extends {
   }
   /** Collection-like TableQuery object for table Color */
   lazy val colors = new TableQuery(tag => new Color(tag))
-  implicit val colorFormat = Json.format[ColorRow]
 
   /**
    * Entity class storing rows of table Product
@@ -119,7 +115,6 @@ object Tables extends {
   }
   /** Collection-like TableQuery object for table Product */
   lazy val products = new TableQuery(tag => new Product(tag))
-  implicit val productFormat = Json.format[ProductRow]
 
   /**
    * Entity class storing rows of table ProductDetail
@@ -162,10 +157,8 @@ object Tables extends {
   }
   /** Collection-like TableQuery object for table ProductDetail */
   lazy val productDetails = new TableQuery(tag => new ProductDetail(tag))
-  implicit val productDetailFormat = Json.format[ProductDetailRow]
 
   case class ProductDetails(id: Int, color: ColorRow, size: String, stock: Int, price: Double)
-  implicit val productDetailsFormat = Json.format[ProductDetails]
   
   /**
    * Entity class storing rows of table ProductImage
@@ -198,10 +191,8 @@ object Tables extends {
   }
   /** Collection-like TableQuery object for table ProductImage */
   lazy val productImages = new TableQuery(tag => new ProductImage(tag))
-  implicit val productImageFormat = Json.format[ProductImageRow]
 
   case class ProductResult(id: Int, name: String, desc: String, productDetails: Seq[ProductDetails], images: Seq[ProductImageRow])
-  implicit val productResultFormat = Json.format[ProductResult]
 
   /**
    * Entity class storing rows of table ProductCategory
