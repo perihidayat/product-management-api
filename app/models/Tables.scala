@@ -3,9 +3,11 @@ package models
 import slick.jdbc.JdbcBackend.DatabaseFactoryDef
 import play.api.libs.json.Json
 import play.api.libs.json.Writes
+import com.typesafe.config.ConfigFactory
+import slick.driver.PostgresDriver
 
 object Tables extends {
-  val profile = slick.driver.SQLiteDriver
+  val profile = slick.driver.PostgresDriver
 } with DatabaseFactoryDef {
 
   import profile.api._
@@ -13,7 +15,11 @@ object Tables extends {
   // NOTE: GetResult mappers for plain SQL are only generated for tables where Slick knows how to map the types of all columns.
   import slick.jdbc.{ GetResult => GR }
 
-  implicit val db = forURL("jdbc:sqlite:db/salestock.db", driver = "org.sqlite.JDBC")
+  val url = ConfigFactory.load().getString("JDBC_DATABASE_URL")
+  val driver = ConfigFactory.load().getString("db.default.driver")
+  val user = ConfigFactory.load().getString("db.default.user")
+  val pass = ConfigFactory.load().getString("db.default.password")
+  implicit val db = forURL(url, driver = driver)
 
   case class CategoryRow(id: Int, name: String, parent: Option[Int])
   /** GetResult implicit for fetching CategoryRow objects using plain SQL queries */
