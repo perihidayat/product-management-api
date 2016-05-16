@@ -2,7 +2,9 @@ package util
 
 import models.Tables._
 import play.api.libs.json._
+import play.api.libs.functional.syntax._
 import play.api.mvc._
+import scala.collection.mutable.ListBuffer
 
 object JsonUtil {
   implicit val categoryFormat = Json.format[CategoryRow]
@@ -13,6 +15,12 @@ object JsonUtil {
   implicit val productCategoryFormat = Json.format[ProductCategoryRow]
   implicit val productDetailsFormat = Json.format[ProductDetails]
   implicit val productResultFormat = Json.format[ProductResult]
+
+  implicit val categoryHierarchyFormat: Format[CategoryHierarchy] = (
+    (JsPath \ "id").format[Int] and
+    (JsPath \ "name").format[String] and
+    (JsPath \ "childs").lazyFormatNullable(implicitly[Format[ListBuffer[CategoryHierarchy]]])
+  )(CategoryHierarchy.apply, unlift(CategoryHierarchy.unapply))
 
   def getJsValue(rs: Request[Any]): Option[JsValue] = {
     rs.body match {

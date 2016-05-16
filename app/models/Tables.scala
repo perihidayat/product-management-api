@@ -6,6 +6,7 @@ import slick.driver.PostgresDriver
 import java.net.URI
 import slick.driver.SQLiteDriver
 import slick.jdbc.JdbcBackend.DatabaseDef
+import scala.collection.mutable.ListBuffer
 
 object Tables extends {
   val profile = if (ConfigFactory.load().getString("db.default.driver").contains("postgresql")) slick.driver.PostgresDriver else slick.driver.SQLiteDriver
@@ -31,7 +32,7 @@ object Tables extends {
       forURL(url, driver = driver)
     }
   }
-  
+
   case class CategoryRow(id: Int, name: String, parent: Option[Int])
   /** GetResult implicit for fetching CategoryRow objects using plain SQL queries */
   implicit def GetResultCategoryRow(implicit e0: GR[Int], e1: GR[String], e2: GR[Option[Int]]): GR[CategoryRow] = GR {
@@ -55,8 +56,20 @@ object Tables extends {
   /** Collection-like TableQuery object for table Category */
   lazy val categories = new TableQuery(tag => new Category(tag))
 
-  case class CategoryHierarchy(id: Int, name: String, childs: Option[Seq[CategoryRow]])
-  
+  case class CategoryHierarchy(id: Int, name: String, childs: Option[ListBuffer[CategoryHierarchy]])
+
+  def addCategoryHierarchy(child: CategoryRow, parent: CategoryHierarchy): Boolean = {
+    if (child.parent.get == parent.id) {
+      parent.childs.get += CategoryHierarchy(child.id, child.name, Option(ListBuffer[CategoryHierarchy]()))
+      true
+    } else {
+      parent.childs match {
+        case None    => false
+        case Some(y) => y.foldLeft(true)((res, in) => if (addCategoryHierarchy(child, in)) return true else false)
+      }
+    }
+  }
+
   /**
    * Entity class storing rows of table Color
    *  @param id Database column id SqlType(INTEGER), PrimaryKey
@@ -159,7 +172,7 @@ object Tables extends {
   lazy val productDetails = new TableQuery(tag => new ProductDetail(tag))
 
   case class ProductDetails(id: Int, color: ColorRow, size: String, stock: Int, price: Double)
-  
+
   /**
    * Entity class storing rows of table ProductImage
    *  @param id Database column id SqlType(INTEGER), PrimaryKey

@@ -11,6 +11,9 @@ import responses.DefaultResponses._
 import scala.concurrent.duration.Duration
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.collection.mutable.Stack
+import scala.collection.mutable.ListBuffer
+import scala.util.control.Breaks._
 
 class CategoryController extends Controller {
 
@@ -70,12 +73,27 @@ class CategoryController extends Controller {
       Ok(Json.toJson(DefaultResponse(Ok.header.status, s"$result rows deleted.")))
     })
 
+  def parseCategoryHierarchyResult(result: Vector[CategoryRow]): Seq[CategoryHierarchy] = {
+    val buffer = ListBuffer[CategoryHierarchy]()
+    for (rs <- result) {
+      rs.parent match {
+        case None => buffer += CategoryHierarchy(rs.id, rs.name, Option(ListBuffer[CategoryHierarchy]()))
+        case Some(x) => {
+          breakable {
+            for (cat <- buffer) if (addCategoryHierarchy(rs, cat)) break
+          }
+        }
+      }
+    }
+    buffer.toSeq
+  }
+
   def up(id: Option[Int]): Action[AnyContent] = Authenticated(
     rs => {
       Ok(toJson(Json.obj("hierarchy" -> loadTopDownCategories(id))))
     })
 
-  def loadTopDownCategories(id: Option[Int]): Seq[CategoryRow] = {
+  def loadTopDownCategories(id: Option[Int]): Seq[CategoryHierarchy] = {
     val cond = id match { case Some(x) => s"$x" case None => "id" }
     val sql = sql"""WITH RECURSIVE cnt(id) AS (
            SELECT id
@@ -88,13 +106,7 @@ class CategoryController extends Controller {
        ) 
        select * from mst_category where id in (select * from cnt)""".as[CategoryRow]
     val result = Await.result(db.run(sql), Duration.Inf)
-    //    val grouped = result.groupBy { _.parent }
-    //    val res = grouped.foldLeft(Map[Int, CategoryHierarchy]())((res, in) =>
-    //      in._1 match {
-    //        case None    => res ++ in._2.map { x => (x.id, CategoryHierarchy(x.id, x.name, Option(Seq[CategoryRow]()))) }
-    //        case Some(x) => res.contains(x)
-    //      })
-    result.toSeq
+    parseCategoryHierarchyResult(result)
   }
 
   def down(id: Option[Int]): Action[AnyContent] = Authenticated(
@@ -102,7 +114,7 @@ class CategoryController extends Controller {
       Ok(toJson(Json.obj("hierarchy" -> loadBottomUpCategories(id))))
     })
 
-  def loadBottomUpCategories(id: Option[Int]): Seq[CategoryRow] = {
+  def loadBottomUpCategories(id: Option[Int]): Seq[CategoryHierarchy] = {
     val cond = id match { case Some(x) => s"$x" case None => "id" }
     val sql = sql"""WITH RECURSIVE cnt(id) AS (
              SELECT id
@@ -115,7 +127,7 @@ class CategoryController extends Controller {
        ) 
        select * from mst_category where id in (select * from cnt)""".as[CategoryRow]
     val result = Await.result(db.run(sql), Duration.Inf)
-    result.toSeq
+    parseCategoryHierarchyResult(result)
   }
 
 }
